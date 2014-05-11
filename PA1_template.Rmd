@@ -1,0 +1,75 @@
+
+## Loading and preprocessing the data
+```{r, echo=TRUE}
+activity <- read.csv("/Users/niinasiitonen/Dropbox/courses/reproducibleResearch2014/peerAssessment/activity.csv", header=TRUE)
+```
+
+## What is mean total number of steps taken per day?
+```{r, echo=TRUE}
+a <-aggregate(activity$steps, by=list(activity$date), 
+  FUN=sum, na.rm=TRUE)
+hist(a$x, xlab="Number of steps", main="Total number of steps per day", ylab="Frequency")
+mean(a$x, na.rm=TRUE)
+median(a$x, na.rm=TRUE)
+```
+
+## What is the average daily activity pattern?
+```{r, echo=TRUE}
+
+# transform interval into factor format
+activity$int <- factor(activity$interval)
+# calculate average no of steps per interval across all days
+b <-aggregate(activity$steps, by=list(activity$interval), 
+  FUN=mean, na.rm=TRUE)
+plot( b$Group.1, b$x, type="l", main="Mean steps per interval", xlab="interval", ylab="Steps")
+# Find interval with max value of average steps
+b[which.max(b$x), 1] # 835
+```
+
+
+## Imputing missing values
+```{r, echo=TRUE}
+table(is.na(activity$steps)) # 2304 NAs
+# filling in all of the missing values 
+# b$x is the average steps per interval
+b$interval <- b$Group.1
+c <- merge(b, activity, by="interval", all=TRUE)
+c$steps2 <- ifelse(is.na(c$steps), c$x, c$steps)
+
+d <-aggregate(c$steps2, by=list(c$date), 
+  FUN=sum, na.rm=TRUE)
+hist(d$x, xlab="Number of steps", main="Total number of steps per day (imputed data)", ylab="Frequency")
+mean(d$x, na.rm=TRUE)
+median(d$x, na.rm=TRUE)
+```
+
+
+## Are there differences in activity patterns between weekdays and weekends?
+
+```{r, echo=TRUE}
+head(c)
+# date to factor format
+c$date2 <- as.Date(c$date)
+# weekday
+c$wday <- weekdays(c$date2)
+c$arki <- ifelse(c(c$wday=="Lauantai" | c$wday=="Sunnuntai"), 0, 1)
+# subset to 2 datasets
+week <- c[c$arki==1,]
+weekend <- c[c$arki==0,]
+head(week)
+# plots
+par(mfrow=c(2,1))
+# steps per interval weekdays
+week1 <-aggregate(week$steps2, by=list(week$interval), 
+  FUN=sum, na.rm=TRUE)
+# head(week1)
+
+plot(week1$Group.1, week1$x, type="l", main="Mean steps per interval (Mon-Fri)", xlab="interval", ylab="Steps")
+
+weekend1 <-aggregate(weekend$steps2, by=list(weekend$interval), 
+  FUN=sum, na.rm=TRUE)
+
+plot(weekend1$Group.1, weekend1$x, type="l", main="Mean steps per interval (Sat-Sun)", xlab="interval", ylab="Steps")
+
+```
+
